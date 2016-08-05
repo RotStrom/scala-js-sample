@@ -1,21 +1,37 @@
-enablePlugins(ScalaJSPlugin)
+import NativePackagerKeys._
 
-name := "scala-js-sample"
+import com.lihaoyi.workbench.Plugin._
 
-version := "1.0"
+cancelable in Global := true
 
-scalaVersion := "2.11.8"
+organization in ThisBuild := "com.github.rotstrom"
 
-scalaJSUseRhino in Global := false
+val app = crossProject.settings(
+  unmanagedSourceDirectories in Compile += baseDirectory.value / "shared" / "main" / "scala",
+  libraryDependencies ++= Seq(
+    "com.lihaoyi" %%% "scalatags" % "0.4.6",
+    "com.lihaoyi" %%% "upickle" % "0.2.7"
+  ),
+  scalaVersion := "2.11.5"
+).jsSettings(
+  libraryDependencies ++= Seq(
+    "org.scala-js" %%% "scalajs-dom" % "0.8.0"
+  )
+).jvmSettings(
+  mainClass in(Compile, run) := Some("simple.Server"),
+  fork in run := true,
+  libraryDependencies ++= Seq(
+    "io.spray" %% "spray-can" % "1.3.2",
+    "io.spray" %% "spray-routing" % "1.3.2",
+    "com.typesafe.akka" %% "akka-actor" % "2.3.6"
+  )
+)
 
-libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "0.9.0"
+lazy val appJS = app.js.settings(
+  workbenchSettings,
+  updateBrowsers <<= updateBrowsers.triggeredBy(fastOptJS in Compile)
+)
+lazy val appJVM = app.jvm.settings(
+  (resources in Compile) += (fastOptJS in(appJS, Compile)).value.data
+)
 
-libraryDependencies += "be.doeraene" %%% "scalajs-jquery" % "0.9.0"
-
-skip in packageJSDependencies := false
-
-jsDependencies += "org.webjars" % "jquery" % "2.1.4" / "2.1.4/jquery.js"
-
-persistLauncher in Compile := true
-
-persistLauncher in Test := false
